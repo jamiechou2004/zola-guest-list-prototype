@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guest list redesign · prototype</title>
+<style>
+:root{--ink:#0e0e0e;--g:#757575;--g2:#8e8e93;--g3:#c7c7cc;--sep:#e5e5ea;--div:#dbdbdb;--zb:#295a7e;--cr:#b73d5c;--fill:#eeeeef;--track:#e4e4e9;--band:#efeff1;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;color:var(--ink);background:#e9e8e4;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.phone{width:390px;height:844px;background:#fff;border-radius:48px;box-shadow:0 0 0 10px #111,0 30px 80px rgba(0,0,0,.25);position:relative;overflow:hidden}
+@media (max-width:440px){body{padding:0;background:#fff}.phone{width:100vw;height:100dvh;border-radius:0;box-shadow:none}}
+.view{position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;transition:transform .34s cubic-bezier(.2,.8,.2,1)}
+.view.off{transform:translateY(100%)}
+#vList{z-index:1}#vTables{z-index:5}#vMove,#vEdit{z-index:25}
+.status{height:46px;padding:15px 0 0 44px;font-weight:600;font-size:17px;flex:none}
+/* list nav */
+.lnav{display:flex;align-items:center;justify-content:space-between;padding:2px 16px 12px;flex:none}
+.glass{height:46px;min-width:46px;border-radius:23px;background:#f6f6f7;border:1px solid #e2e2e6;display:flex;align-items:center;justify-content:center;gap:22px;padding:0 14px}
+.ttl{text-align:center;line-height:1.2}.ttl b{display:block;font-weight:600;font-size:17px}.ttl span{font-weight:600;font-size:13px;color:#6c6c70}
+.seg{display:flex;background:var(--track);border-radius:99px;padding:3px;gap:2px}
+.seg button{flex:1;padding:7px 0;border-radius:99px;font-weight:500;font-size:15px}
+.seg button.on{background:#fff;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.tabsWrap{padding:0 20px 12px;border-bottom:1px solid var(--sep);flex:none}
+.scroll{flex:1;overflow-y:auto;position:relative;scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+.pin{position:sticky;top:0;z-index:3;background:#fff;padding:10px 20px 12px}
+.pin h1{font-weight:400;font-size:28px;margin-bottom:12px}
+.search{display:flex;align-items:center;gap:10px;background:var(--fill);border-radius:10px;padding:0 12px;height:44px;margin-bottom:12px}
+.search input{border:0;outline:0;background:none;font:inherit;font-size:17px;flex:1;min-width:0}
+.sec{background:var(--band);padding:5px 20px;font-size:17px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:20px 40px 20px 20px;border-bottom:1px solid var(--sep);width:100%;text-align:left}
+.row.sub2{padding-top:12px;padding-bottom:12px}
+.row:active{background:#f6f6f6}
+.nm{font-size:17px}.nm b{font-weight:600}.sub{font-size:13px;color:var(--g2);margin-top:3px}.sub em{font-style:normal;font-weight:600;color:var(--zb)}
+.st{font-size:15px;white-space:nowrap}.st.ns{color:var(--zb);font-weight:600}
+.az{position:absolute;right:3px;top:355px;display:flex;flex-direction:column;align-items:center;z-index:4}
+.az button{font-size:11px;font-weight:600;color:var(--zb);line-height:13px;padding:0 4px}
+.empty{padding:48px 24px;text-align:center;color:var(--g)}
+/* sheet */
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+.dim.show{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:8px;right:8px;bottom:8px;background:#fff;border-radius:38px;padding:16px 16px 26px;transform:translateY(110%);transition:transform .32s cubic-bezier(.2,.8,.2,1);z-index:21;box-shadow:0 -2px 24px rgba(0,0,0,.12)}
+.sheet.show{transform:none}
+.shh{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin-bottom:6px}
+.circ{width:44px;height:44px;border-radius:50%;background:#f2f2f7;display:grid;place-items:center}
+.shh .ttl span{font-weight:400;color:var(--g2)}
+.srow{display:flex;align-items:center;gap:14px;width:100%;padding:16px 8px 16px 4px;font-size:17px;text-align:left}
+.srow+.srow{border-top:1px solid var(--sep)}
+.srow span{flex:1}
+/* modal headers (Move to / Edit guest) */
+.mh{display:grid;grid-template-columns:46px 1fr 46px;align-items:center;padding:0 16px;height:60px;flex:none}
+.xb{width:45px;height:45px;border-radius:50%;background:#fff;border:1px solid #e6e6e6;box-shadow:0 2px 6px rgba(0,0,0,.08);display:grid;place-items:center}
+.okb{width:45px;height:45px;border-radius:50%;background:var(--zb);box-shadow:0 2px 6px rgba(0,0,0,.12);display:grid;place-items:center}
+.okb:disabled{opacity:.35}
+.mh .ttl b{font-size:17px}.mh .ttl span{font-weight:400;color:var(--g2)}
+/* move to */
+.trow{display:flex;align-items:center;gap:16px;width:100%;padding:18px 20px;border-bottom:1px solid var(--sep);text-align:left}
+.trow .tb{flex:1;min-width:0}.trow .n{font-size:19px}.trow .c{font-size:15px;margin-top:4px}.trow .p{font-size:15px;color:var(--g2);margin-top:4px;line-height:1.35}
+.trow.full{color:#b4b4b8;cursor:default}.trow.full .p{color:#c9c9cc}
+.rad{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--g3);flex:none;display:grid;place-items:center}
+.trow.full .rad{border-color:var(--sep)}
+.trow.sel .rad{background:var(--ink);border-color:var(--ink)}
+#mvGo{background:var(--ink)}
+/* edit guest — replica */
+.etabs{display:flex;padding:0 0 0 35px;gap:0;border-bottom:1px solid var(--div);flex:none}
+.etabs button{font-size:15px;padding:6px 0 9px;margin-right:34px;border-bottom:3px solid transparent;margin-bottom:-1px}
+.etabs button.on{border-color:var(--ink)}
+.epane{padding:24px 20px 40px}
+.h2{font-size:23px;margin-bottom:20px}
+.radios{display:flex;margin-bottom:44px}
+.radio{display:flex;align-items:center;gap:10px;width:183px;font-size:17px;line-height:23px;text-align:left}
+.radio i{width:23px;height:23px;border-radius:50%;border:1px solid #c4c4c4;flex:none;display:grid;place-items:center}
+.radio.on i{border:1.5px solid var(--ink)}.radio.on i::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--ink)}
+.evrow{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--div);border-bottom:1px solid var(--div);margin-right:-20px;padding:24px 68px 24px 0;margin-bottom:42px}
+.evrow b{font-weight:400;font-size:17px;display:block}.evrow small{font-size:15px;color:var(--g);display:block;margin-top:8px}
+.tog{width:62px;height:27px;border-radius:14px;background:#d6d6d6;position:relative;flex:none}
+.tog::after{content:"";position:absolute;left:2px;top:2px;width:37px;height:23px;border-radius:12px;background:#fff;transition:.2s}
+.tog.on{background:var(--zb)}.tog.on::after{left:23px;box-shadow:inset 0 0 0 1px var(--zb)}
+.lbl{font-size:13px;margin:0 0 10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 21px;margin-bottom:22px}
+.ob{height:58px;border-radius:22px;border:1px solid #cfcfcf;font-size:17px;color:#b0b0b0}
+.ob.dark{color:var(--ink);border-color:#e3e3e3}
+.ob.on{border:2px solid var(--ink);color:var(--ink)}
+.delb{display:block;margin:10px auto 0;width:258px;height:51px;border-radius:26px;border:1px solid var(--cr);color:var(--cr);font-weight:600;font-size:17px}
+.rv h3{font-weight:400;font-size:24px}.rv small{display:block;font-size:14px;margin:6px 0 24px}
+.rvrow{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--div);border-bottom:1px solid var(--div);margin-right:-20px;padding:20px 32px 20px 0;font-size:17px}
+.dd{width:160px;height:42px;background:#f3f3f3;display:flex;align-items:center;justify-content:space-between;padding:0 14px 0 22px;font-size:17px}
+.gift h3{font-weight:400;font-size:23px;margin-bottom:20px}
+.ab{width:100%;height:51px;border-radius:26px;border:1px solid var(--ink);font-weight:600;font-size:17px}
+.promo{margin-top:30px;border-radius:16px;background:#2c4a65;color:#fff;text-align:center;padding:40px 24px 120px}
+.promo b{display:block;font-weight:400;font-size:30px;line-height:1.15}.promo p{font-size:17px;margin:14px 0 18px;opacity:.95}.promo span{font-weight:600;font-size:17px}
+/* picker */
+.pick{position:absolute;left:0;right:0;bottom:0;height:294px;background:#fff;transform:translateY(100%);transition:transform .28s;z-index:30}
+.pick.show{transform:none}
+.pick .bar{height:43px;background:#f9f9f9;border-top:1px solid var(--div);border-bottom:1px solid var(--div);display:flex;align-items:center;justify-content:flex-end;padding:0 20px}
+.pick .bar button{color:var(--zb);font-weight:600;font-size:17px}
+.wheel{padding-top:44px;display:flex;flex-direction:column;align-items:center}
+.wheel button{width:calc(100% - 18px);height:42px;font-size:19px;color:#b8b8b8;border-radius:20px}
+.wheel button.on{font-size:23px;color:var(--ink);background:#f4f4f5}
+.toast{position:absolute;left:50%;bottom:44px;transform:translate(-50%,20px);background:rgba(20,20,20,.92);color:#fff;font-size:15px;padding:12px 18px;border-radius:99px;opacity:0;transition:.3s;z-index:40;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.meta{position:fixed;left:16px;bottom:12px;font-size:12px;color:#8a8a85}
+@media (max-width:440px){.meta{display:none}}
+.msec{background:#efeff1;color:#6c6c70;font-size:13px;padding:7px 20px;letter-spacing:.02em}
+.trow{padding:16px 20px}.trow .n{font-weight:600}.trow .p b{color:var(--ink);font-weight:600}
+.seats{display:flex;align-items:center;gap:8px;font-size:13px;color:#8e8e93;margin-top:6px}.seats .dots{display:flex;gap:4px}
+.seats i{width:8px;height:8px;border-radius:50%;border:1.25px solid #0e0e0e;box-sizing:border-box}.seats i.f{background:#0e0e0e}
+.seats.dim{color:#b4b4b8}.seats.dim i{border-color:#c7c7cc}.seats.dim i.f{background:#c7c7cc}
+.trow.full{padding:14px 20px}.trow.full .n{color:#b4b4b8}.trow .rt{font-size:15px;color:#8e8e93}
+.srow .sl{flex:1;text-align:left}.srow .sl small{display:block;font-size:13px;color:#295a7e;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- Guests -->
+<section class="view" id="vList">
+  <div class="status">11:56</div>
+  <div class="lnav">
+    <div class="glass"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.5 4.5L7 11l6.5 6.5" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="ttl"><b>Wedding</b><span>Version 1 ⌄</span></div>
+    <div class="glass"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2.5v11M7.5 6L11 2.5 14.5 6M6 9H4.5v10h13V9H16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="3" stroke="#000" stroke-width="2"/><path d="M11 2v2.5M11 17.5V20M2 11h2.5M17.5 11H20M4.6 4.6l1.8 1.8M15.6 15.6l1.8 1.8M4.6 17.4l1.8-1.8M15.6 6.4l1.8-1.8" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg></div>
+  </div>
+  <div class="tabsWrap"><div class="seg" id="mainTabs"><button data-t="floor">Floor plan</button><button data-t="tables">Tables</button><button data-t="guests" class="on">Guests</button></div></div>
+  <div class="scroll" id="listScroll">
+    <div class="pin" id="pin">
+      <h1>Guests</h1>
+      <div class="search"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="6" stroke="#000" stroke-width="2"/><path d="M13 13l4.5 4.5" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg><input id="q" placeholder="Search Guests" autocomplete="off"></div>
+      <div class="seg" id="filters"><button data-f="all" class="on"></button><button data-f="un"></button><button data-f="seated"></button></div>
+    </div>
+    <div id="list"></div>
+  </div>
+  <div class="az" id="az"></div>
+</section>
+
+<!-- Tables tab -->
+<section class="view off" id="vTables" style="transition:none">
+  <div class="status">11:57</div>
+  <div class="lnav"><div style="width:46px"></div><div class="ttl"><b>Wedding</b><span>Version 1 ⌄</span></div><div style="width:46px"></div></div>
+  <div class="tabsWrap"><div class="seg" id="tabs2"><button data-t="floor">Floor plan</button><button data-t="tables" class="on">Tables</button><button data-t="guests">Guests</button></div></div>
+  <div class="scroll" id="tablesOnly"></div>
+</section>
+
+<!-- Move to -->
+<section class="view off" id="vMove">
+  <div class="status">11:56</div>
+  <div class="mh">
+    <button class="xb" data-close><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4l12 12M16 4L4 16" stroke="#0E0E0E" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+    <div class="ttl"><b>Move to…</b><span id="mvSub"></span></div>
+    <button class="okb" id="mvGo" disabled><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4.5 11.5l4.5 4.5 8.5-9.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+  <div class="scroll" id="tlist"></div>
+</section>
+
+<!-- Edit guest (replica) -->
+<section class="view off" id="vEdit">
+  <div class="status">8:17</div>
+  <div class="mh">
+    <button class="xb" data-close><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4l12 12M16 4L4 16" stroke="#0E0E0E" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+    <div class="ttl"><b id="edTitle"></b></div>
+    <button class="okb" id="edSave"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4.5 11.5l4.5 4.5 8.5-9.5" stroke="#A5F7FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+  <div class="etabs" id="edTabs"><button data-p="info">Information</button><button data-p="rsvp">RSVPs</button><button data-p="gifts">Gifts &amp; thank yous</button></div>
+  <div class="scroll"><div class="epane" id="edPane"></div></div>
+  <div class="pick" id="pick"><div class="bar"><button id="pickDone">Done</button></div><div class="wheel" id="wheel"></div></div>
+</section>
+
+<div class="dim" id="dim"></div>
+<div class="sheet" id="sheet">
+  <div class="shh"><button class="circ" id="shClose"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="#1C1C1E" stroke-width="2.2" stroke-linecap="round"/></svg></button><div class="ttl"><b id="shName"></b><span id="shSub"></span></div><span></span></div>
+  <button class="srow" id="aMove"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 12h13M13 7l5 5-5 5" stroke="#0E0E0E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sl">Move to…<small id="mvHint"></small></span><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5L9.5 7 5 11.5" stroke="#C7C7CC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button class="srow" id="aEdit"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L19 9l-4-4L4 16v4z" stroke="#0E0E0E" stroke-width="2" stroke-linejoin="round"/></svg><span>Edit guest info</span><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5L9.5 7 5 11.5" stroke="#C7C7CC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+</div>
+<div class="toast" id="toast"></div>
+</div>
+<div class="meta">UXDG 380 · student concept prototype</div>
+
+<script>
+const CAP=8,TABLES=16,G=[];let uid=0;
+const add=(first,last,table,host)=>{const g={id:++uid,first,last,table,host:host||null,rsvp:'Attending',invite:'definitely',wedding:true,person:null,rel:null};G.push(g);return g;};
+[['Sean','Park'],['Sheila','O’Brien'],['Kevin','O’Brien'],['Ana','Silva'],['Dana','Hill'],['Ron','Marsh'],['Barb','Kowalski']].forEach(n=>add(n[0],n[1],1));
+const nicole=add('Nicole','Adams',16);add('Nina','Alvarez',16);add('Marcus','Bell',16);[['Grace','Lin'],['Owen','Hart'],['Priya','Nair'],['Leo','Grant']].forEach(n=>add(n[0],n[1],16));
+[['Bea','Moreno'],['Ben','Ellis'],['Bianca','Torres'],['Brandon','Hale'],['Bree','Johnson'],['Simone','Adeyemi']].forEach(n=>add(n[0],n[1],2));
+add('Brian','Adams',2,nicole.id);const sofia=add('Sofia','Baptiste',2);
+[['Sam','Rivera'],['Carlos','Vega'],['Casey','Ellis'],['Chris','Patel'],['Cora','Whitfield'],['Mia','Vega']].forEach(n=>add(n[0],n[1],3));
+[['Danny','Cruz'],['Drew','Brooks'],['Kara','Lindqvist'],['Debbie','Marsh'],['Denise','Coleman'],['Devon','Price'],['Diane','Brooks'],['Dottie','Moreno']].forEach(n=>add(n[0],n[1],4));
+const tom=add('Tom','Becker',14);add('Mei','Becker',14,tom.id);add('Theo','Blake',8);add('Helen','Brandt',10);add('Hannah','Brooks',5);
+add('Andre','Baptiste',null,sofia.id);add('Al','Greer',null);add('Alex','Kim',null);
+const FN=['Avery','Blair','Caleb','Daisy','Eli','Fiona','Gabe','Hazel','Ivan','Jade','Kyle','Lena','Miles','Nora','Owen','Piper','Quinn','Rosa','Seth','Tessa','Uma','Vince','Wren','Xavier','Yara','Zane','Ada','Beau','Cleo','Dean','Elsa','Finn','Gwen','Hugo','Iris','Joel','Kira','Liam','Maya','Noah','Opal','Paul','Ruby','Sage','Troy','Vera','Will','Zoe','June','Reid'];
+const LN=['Chen','Diaz','Evans','Foster','Garcia','Hughes','Ito','Jensen','Khan','Lopez','Nguyen','Ortiz','Reyes','Sato','Turner','Underwood','Vargas','Walsh','Young','Zimmer','Moss','Bishop','Carter','Doyle','Ellison','Fuller','Grant','Hart','Ingram','Lowe'];
+const target={1:7,3:6,5:5,9:6,16:7};let fi=0;
+for(let t=1;t<=TABLES;t++){const want=target[t]??CAP;while(G.filter(g=>g.table===t).length<want){add(FN[fi%FN.length],LN[(fi*7)%LN.length],t);fi++;}}
+let filter='all',query='',cur=null,moveSel=null,edTab='info',draft=null;
+const $=id=>document.getElementById(id);
+const full=g=>g.first+' '+g.last;const hostOf=g=>g.host?G.find(h=>h.id===g.host):null;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// list
+function renderList(){const un=G.filter(g=>!g.table).length,b=$('filters').children;b[0].textContent='All '+G.length;b[1].textContent='Unseated '+un;b[2].textContent='Seated '+(G.length-un);[...b].forEach(x=>x.classList.toggle('on',x.dataset.f===filter));
+  const vis=g=>!(filter==='un'&&g.table)&&!(filter==='seated'&&!g.table)&&(!query||full(g).toLowerCase().includes(query.toLowerCase()));
+  const sorted=[...G].sort((a,c)=>a.last.localeCompare(c.last)||(a.host?1:0)-(c.host?1:0)||a.first.localeCompare(c.first));
+  const groups={};sorted.filter(vis).forEach(g=>{const L=g.last[0].toUpperCase();(groups[L]=groups[L]||[]).push(g);});
+  const Ls=Object.keys(groups).sort();
+  $('list').innerHTML=Ls.length?Ls.map(L=>`<div class="sec" id="sec-${L}">${L}</div>`+groups[L].map(row).join('')).join(''):`<div class="empty">No guests match</div>`;
+  $('az').innerHTML=Ls.map(L=>`<button data-l="${L}">${L}</button>`).join('');}
+function row(g){const h=hostOf(g);let sub='';
+  if(h){const split=g.table&&h.table&&g.table!==h.table;sub=`<div class="sub">${esc(full(h))}’s +1${split?' · <em>not at '+(h.first)+'’s table</em>':''}</div>`;}
+  const name=`${esc(g.first)} <b>${esc(g.last)}</b>`;
+  return `<button class="row${h?' sub2':''}" data-id="${g.id}"><div><div class="nm">${name}</div>${sub}</div><span class="st${g.table?'':' ns'}">${g.table?'Table '+g.table:'Not seated'}</span></button>`;}
+$('filters').onclick=e=>{const f=e.target.dataset.f;if(f){filter=f;renderList();$('listScroll').scrollTop=0;}};
+$('q').oninput=e=>{query=e.target.value.trim();renderList();};
+$('az').onclick=e=>{const L=e.target.dataset.l;if(L)$('listScroll').scrollTop=$('sec-'+L).offsetTop-$('pin').offsetHeight;};
+$('list').onclick=e=>{const r=e.target.closest('.row');if(r)openSheet(G.find(g=>g.id==r.dataset.id));};
+// sheet
+function openSheet(g){cur=g;const h=hostOf(g);$('shName').textContent=full(g);$('shSub').textContent=(h?full(h)+'’s +1 · ':'')+(g.table?'Table '+g.table:'Not seated');const hint=h&&h.table&&h.table!==g.table?full(h)+' is at Table '+h.table:'';$('mvHint').textContent=hint;$('mvHint').style.display=hint?'block':'none';$('dim').classList.add('show');$('sheet').classList.add('show');}
+function closeSheet(){$('dim').classList.remove('show');$('sheet').classList.remove('show');}
+$('dim').onclick=closeSheet;$('shClose').onclick=closeSheet;
+const open=v=>{closeSheet();setTimeout(()=>$(v).classList.remove('off'),120);};
+const close=()=>{['vMove','vEdit'].forEach(v=>$(v).classList.add('off'));$('pick').classList.remove('show');};
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=close);
+// move to
+$('aMove').onclick=()=>{const h=hostOf(cur);moveSel=(h&&h.table&&h.table!==cur.table&&G.filter(x=>x.table===h.table).length<CAP)?h.table:null;renderMove();open('vMove');};
+function renderMove(){$('mvSub').textContent=full(cur)+' · '+(cur.table?'Table '+cur.table:'Not seated');
+  const h=hostOf(cur),hostT=h&&h.table&&h.table!==cur.table?h.table:null;
+  const dots=(c,dim)=>`<span class="seats${dim?' dim':''}"><span class="dots">${Array.from({length:CAP},(_,i)=>`<i class="${i<c?'f':''}"></i>`).join('')}</span>${c} of ${CAP} seats</span>`;
+  const chk='<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.3l2.6 2.6L11 4.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const open=t=>{const n=G.filter(x=>x.table===t);return `<button class="trow${moveSel===t?' sel':''}" data-t="${t}"><div class="tb"><div class="n">Table ${t}</div>${dots(n.length)}<div class="p">${n.map(x=>h&&x.id===h.id?'<b>'+esc(full(x))+'</b>':esc(full(x))).join(', ')}</div></div><span class="rad">${moveSel===t?chk:''}</span></button>`;};
+  const fullRow=t=>{const c=G.filter(x=>x.table===t).length;return `<button class="trow full" disabled><div class="tb"><div class="n">Table ${t}</div>${dots(c,1)}</div><span class="rt">${cur.table===t?'Current':'Full'}</span></button>`;};
+  let fullT=[],openT=[];for(let t=1;t<=TABLES;t++){const c=G.filter(x=>x.table===t).length;if(t===cur.table||c>=CAP)fullT.push(t);else if(t!==hostT)openT.push(t);}
+  const hostOpen=hostT&&G.filter(x=>x.table===hostT).length<CAP;
+  if(hostT&&!hostOpen)fullT.push(hostT);
+  fullT.sort((a,b)=>(b===cur.table)-(a===cur.table)||a-b);
+  let s='';if(hostOpen)s+=`<div class="msec">WITH ${esc(full(h)).toUpperCase()}</div>`+open(hostT);
+  s+=`<div class="msec">OPEN SEATS</div>`+openT.map(open).join('');
+  if(fullT.length)s+=`<div class="msec">FULL</div>`+fullT.map(fullRow).join('');
+  $('tlist').innerHTML=s;$('mvGo').disabled=!moveSel;}
+$('tlist').onclick=e=>{const b=e.target.closest('.trow');if(!b||b.disabled)return;moveSel=+b.dataset.t;renderMove();};
+$('mvGo').onclick=()=>{if(!moveSel)return;cur.table=moveSel;close();renderList();toast(full(cur)+' moved to Table '+moveSel);};
+// edit guest (replica)
+$('aEdit').onclick=()=>{draft={rsvp:cur.rsvp,invite:cur.invite,wedding:cur.wedding,person:cur.person,rel:cur.rel};edTab='info';renderEdit();open('vEdit');};
+function renderEdit(){$('edTitle').textContent=full(cur);[...$('edTabs').children].forEach(b=>b.classList.toggle('on',b.dataset.p===edTab));let h='';
+  if(edTab==='info'){const ob=(k,v,dark)=>`<button class="ob${dark?' dark':''}${draft[k]===v?' on':''}" data-k="${k}" data-v="${v}">${v}</button>`;
+    h=`<div class="h2">Invited to wedding</div>
+    <div class="radios"><button class="radio${draft.invite==='definitely'?' on':''}" data-inv="definitely"><i></i>Definitely<br>invited</button><button class="radio${draft.invite==='maybe'?' on':''}" data-inv="maybe"><i></i>Maybe<br>invited</button></div>
+    <div class="h2">Events invited to</div>
+    <div class="evrow"><div><b>Wedding</b><small>Monday, October 26, 2026</small></div><button class="tog${draft.wedding?' on':''}" id="tog"></button></div>
+    <div class="h2">Relationship to you</div>
+    <div class="lbl">Select person</div><div class="grid2">${ob('person','Jordan’s',1)}${ob('person','Taylor’s',1)}</div>
+    <div class="lbl">Select relationship</div><div class="grid2">${ob('rel','Family')}${ob('rel','Friend')}${ob('rel','Wedding Party')}${ob('rel','Family Friend')}</div>
+    <button class="delb" id="del">Delete guest</button>`;}
+  else if(edTab==='rsvp'){h=`<div class="rv"><h3>Wedding</h3><small>Monday, October 26, 2026</small><div class="rvrow"><span>${esc(full(cur))}</span><button class="dd" id="dd"><span>${draft.rsvp}</span><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 6l5 5 5-5" stroke="#0E0E0E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>`;}
+  else h=`<div class="gift"><h3>What did ${esc(cur.first)} get you?</h3><button class="ab">Add gifts from ${esc(cur.first)}</button><div class="promo"><b>Thank your entire guest list in seconds.</b><p>Personalized drafts ready for you to polish and print.</p><span>Start writing for FREE →</span></div></div>`;
+  $('edPane').innerHTML=h;}
+$('edTabs').onclick=e=>{const p=e.target.dataset.p;if(p){edTab=p;$('pick').classList.remove('show');renderEdit();}};
+$('edPane').onclick=e=>{const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.inv){draft.invite=t.dataset.inv;renderEdit();}
+  else if(t.id==='tog'){draft.wedding=!draft.wedding;renderEdit();}
+  else if(t.dataset.k){draft[t.dataset.k]=draft[t.dataset.k]===t.dataset.v?null:t.dataset.v;renderEdit();}
+  else if(t.id==='dd'){renderWheel();$('pick').classList.add('show');}
+  else if(t.id==='del'){const id=cur.id;G.splice(G.findIndex(g=>g.id===id),1);G.forEach(g=>{if(g.host===id)g.host=null;});close();renderList();toast(full(cur)+' deleted');}};
+function renderWheel(){$('wheel').innerHTML=['No Reply','Attending','Declined'].map(o=>`<button class="${draft.rsvp===o?'on':''}" data-o="${o}">${o}</button>`).join('');}
+$('wheel').onclick=e=>{const o=e.target.dataset.o;if(o){draft.rsvp=o;renderWheel();renderEdit();}};
+$('pickDone').onclick=()=>$('pick').classList.remove('show');
+$('edSave').onclick=()=>{Object.assign(cur,draft);close();renderList();toast('Saved');};
+// tables tab
+function showTab(t){if(t==='guests'){$('vTables').classList.add('off');return;}
+  let s='';if(t==='tables'){for(let i=1;i<=TABLES;i++){const n=G.filter(x=>x.table===i);s+=`<div class="trow" style="cursor:default"><div class="tb"><div class="n">Table ${i}</div><div class="c">${n.length} of ${CAP} seats filled</div><div class="p">${esc(n.map(full).join(', '))}</div></div></div>`;}}else s='<div class="empty">Floor plan</div>';
+  $('tablesOnly').innerHTML=s;[...$('tabs2').children].forEach(b=>b.classList.toggle('on',b.dataset.t===t));$('vTables').classList.remove('off');}
+$('mainTabs').onclick=e=>{const t=e.target.dataset.t;if(t)showTab(t);};$('tabs2').onclick=e=>{const t=e.target.dataset.t;if(t)showTab(t);};
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800);}
+renderList();
+</script>
+</body>
+</html>
